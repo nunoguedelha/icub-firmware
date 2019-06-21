@@ -61,6 +61,7 @@ volatile extern int gTemperature;
 volatile extern unsigned int i2cERRORS;
 volatile extern long gQEPosition;
 volatile extern int  gQEVelocity;
+volatile extern int  motorPosition;
 
 volatile extern int Ipeak;
 

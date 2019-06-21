@@ -148,7 +148,8 @@ volatile long gQEPosition = 0;
 volatile int  gQEVelocity = 0;
 volatile tMeasCurrParm MeasCurrParm;
 volatile tCtrlReferences CtrlReferences;
-tParkParm ParkParm;
+volatile tParkParm ParkParm;
+volatile int  motorPosition;
 
 /////////////////////////////////////////////////
 
@@ -584,6 +585,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
     // enc is in [0 - 360) range here
 
     char sector = 0;
+    motorPosition = enc;
 
     if (MotorConfig.has_hall)
     {
