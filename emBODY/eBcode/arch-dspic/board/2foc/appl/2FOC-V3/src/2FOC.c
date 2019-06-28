@@ -811,7 +811,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
         }
         else if (gControlMode == icubCanProto_controlmode_openloop)
         {
-            VqRef = ((long)CtrlReferences.VqRef)<<(IKs-VOLT_REF_SHIFT);
+            VqRef = ((long)CtrlReferences.VqRef)<<(10-VOLT_REF_SHIFT);
             IqRef = 0;
         }
         else
@@ -834,13 +834,13 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
     {
         int iQerror = IqRef-I2Tdata.IQMeasured;
 
-        VqA += __builtin_mulss(iQerror-iQerror_old,IKp) + __builtin_mulss(iQerror+iQerror_old,IKi);
+        VqA += __builtin_mulss(iQerror-iQerror_old,0) + __builtin_mulss(iQerror+iQerror_old,0);
 
         iQerror_old = iQerror;
 
         if (VqA > IIntLimit) VqA = IIntLimit; else if (VqA < -IIntLimit) VqA = -IIntLimit;
 
-        Vq = (int)(VqA>>IKs);
+        Vq = (int)(VqA>>10);
 
         // alternative formulation with ff term
         //VqA += __builtin_mulss(iQerror+iQerror_old,Ki);
@@ -865,7 +865,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
             if (limit == 1)
             {
                 int iQerror =  Ipeak-I2Tdata.IQMeasured;
-                VqL += __builtin_mulss(iQerror-iQerror_old,IKp) + __builtin_mulss(iQerror+iQerror_old,IKi);
+                VqL += __builtin_mulss(iQerror-iQerror_old,0) + __builtin_mulss(iQerror+iQerror_old,0);
                 iQerror_old = iQerror;
 
                 if (VqL >= 0) { VqL = 0; limit = 0; iQerror_old = 0; }
@@ -873,19 +873,19 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
             else if (limit == -1)
             {
                 int iQerror = -Ipeak-I2Tdata.IQMeasured;
-                VqL += __builtin_mulss(iQerror-iQerror_old,IKp) + __builtin_mulss(iQerror+iQerror_old,IKi);
+                VqL += __builtin_mulss(iQerror-iQerror_old,0) + __builtin_mulss(iQerror+iQerror_old,0);
                 iQerror_old = iQerror;
 
                 if (VqL <= 0) { VqL = 0; limit = 0; iQerror_old = 0; }
             }
 
-            Vq = (int)((VqRef+VqL)>>IKs);
+            Vq = (int)((VqRef+VqL)>>10);
         }
         else
         {
             if (gControlMode == icubCanProto_controlmode_openloop)
             {
-                Vq = (int)(VqRef>>IKs);
+                Vq = (int)(VqRef>>10);
             }
             else // if (gControlMode == icubCanProto_controlmode_speed_voltage)
             {
@@ -900,13 +900,13 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
     // BEMF section
     int iDerror = -I2Tdata.IDMeasured;
 
-    VdA += __builtin_mulss(iDerror-iDerror_old,IKp) + __builtin_mulss(iDerror+iDerror_old,IKi);
+    VdA += __builtin_mulss(iDerror-iDerror_old,0) + __builtin_mulss(iDerror+iDerror_old,0);
 
     iDerror_old = iDerror;
 
     if (VdA > IIntLimit) VdA = IIntLimit; else if (VdA < -IIntLimit) VdA = -IIntLimit;
 
-    int Vd = (int)(VdA>>IKs);
+    int Vd = (int)(VdA>>10);
     //
     ////////////////////////////////////////////////////////////////////////////
 
@@ -960,7 +960,11 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
     *ppwm0 =  V2+V2;
     *ppwmL = -V1-V2;
 
-    pwmOut(Va,Vb,Vc);
+    ParkParm.qV1 = Va;
+    ParkParm.qV3 = Vc;
+    ParkParm.qVq = Vq;
+
+    pwmOut(Va+IKp,Vb+IKi,Vc+IKs);
     //
     ////////////////////////////////////////////////////////////////////////////
 
