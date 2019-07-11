@@ -71,9 +71,9 @@ extern void CanIcubProtoTrasmitterSendPeriodicData(void)
     payload.w[2] = gQEPosition & 0xFFFF;
     payload.w[3] = gQEPosition >> 16;
      */
-    payload.w[0] = (int)ParkParm.qVq;
+    payload.w[0] = (int)ParkParm.qV1;
     payload.w[1] = motorPosition;
-    payload.w[2] = (int)ParkParm.qV1;
+    payload.w[2] = (int)ParkParm.qVq;
     payload.w[3] = (int)ParkParm.qV3;
 
     msgid = CAN_ICUBPROTO_STDID_MAKE_TX(ICUBCANPROTO_CLASS_PERIODIC_MOTORCONTROL, canprototransmitter_bid, ICUBCANPROTO_PER_MC_MSG__2FOC);
