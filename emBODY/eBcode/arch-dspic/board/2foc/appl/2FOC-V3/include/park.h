@@ -52,6 +52,12 @@ typedef struct {
     short   qV1;
     short   qV2;
     short   qV3;
+    short   PDC1;
+    short   PDC2;
+    short   PDC3;
+    short   qIaOffset;
+    short   qIbOffset;
+    short   qIcOffset;
     } tParkParm;
 
 //void SinCos(void);      // Calculate qSin,qCos from iAngle

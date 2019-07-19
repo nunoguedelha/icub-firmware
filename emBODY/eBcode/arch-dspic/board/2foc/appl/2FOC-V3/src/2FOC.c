@@ -149,7 +149,8 @@ volatile int  gQEVelocity = 0;
 volatile tMeasCurrParm MeasCurrParm;
 volatile tCtrlReferences CtrlReferences;
 volatile tParkParm ParkParm;
-volatile int  motorPosition;
+volatile int motorElecPhase;
+volatile int loggedVarSelector = 0;
 
 /////////////////////////////////////////////////
 
@@ -196,6 +197,7 @@ volatile int gMaxCurrent = 0;
 volatile long sI2Tlimit = 0;
 
 volatile int  IKp =  8;
+volatile int  IKd =  2;
 volatile int  IKi =  2;
 volatile char IKs = 10;
 volatile long IIntLimit = 0;//800L*1024L;
@@ -216,17 +218,23 @@ void setMaxCurrent(int nom, int peak, int ovr)
     Iovr = ovr;
 }
 
-void setIPid(int kp, int ki, char shift)
+void setIPid(int kp, int kd, int ki, char shift)
 {
-    IKp = kp;
-    IKi = ki/2;
+    // DEBUG: IKp=kp/32 for getting the original value from the yarpmotorgui
+    // interface. On yarpmotorgui, pos/neg values between [-20,20] are encoded as follows:
+    //   0 -> -100
+    // 100 ->    0
+    // 145 -> + 45
+    IKp = kp/32-100;
+    IKd = kd/32-100;
+    IKi = ki/32-100;
     IKs = shift;
     IIntLimit = ((long)PWM_MAX)<<shift;
 }
 
 void setSPid(int kp, int ki, char shift)
 {
-    SKp = kp;
+    loggedVarSelector = kp>>5;
     SKi = ki/2;
     SKs = shift;
     SIntLimit = ((long)PWM_MAX)<<shift;
@@ -585,7 +593,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
     // enc is in [0 - 360) range here
 
     char sector = 0;
-    motorPosition = enc;
+    motorElecPhase = enc;
 
     if (MotorConfig.has_hall)
     {
@@ -961,10 +969,15 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
     *ppwmL = -V1-V2;
 
     ParkParm.qV1 = Va;
+    ParkParm.qV2 = Vb;
     ParkParm.qV3 = Vc;
+    ParkParm.qVd = Vd;
     ParkParm.qVq = Vq;
+    ParkParm.qIaOffset = IKp;
+    ParkParm.qIbOffset = IKd;
+    ParkParm.qIcOffset = IKi;
 
-    pwmOut(Va+IKp,Vb+IKi,Vc+IKs);
+    pwmOut(Va+ParkParm.qIaOffset,Vb+ParkParm.qIbOffset,Vc+ParkParm.qIcOffset);
     //
     ////////////////////////////////////////////////////////////////////////////
 

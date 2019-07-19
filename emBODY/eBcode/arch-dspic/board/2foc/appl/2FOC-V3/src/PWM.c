@@ -9,6 +9,7 @@
 
 #include "PWM.h"
 #include "Faults.h"
+#include "Park.h"
 
 extern tSysStatus SysStatus;
 
@@ -216,5 +217,9 @@ void pwmOut(int V1, int V2, int V3)
     PDC1 = PWM_50_DUTY_CYCLE + V1;
     PDC2 = PWM_50_DUTY_CYCLE + V2;
     PDC3 = PWM_50_DUTY_CYCLE + V3;
+    
+    ParkParm.PDC1 = PDC1;
+    ParkParm.PDC2 = PDC2;
+    ParkParm.PDC3 = PDC3;
 }
 

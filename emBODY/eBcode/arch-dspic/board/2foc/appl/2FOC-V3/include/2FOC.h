@@ -61,14 +61,15 @@ volatile extern int gTemperature;
 volatile extern unsigned int i2cERRORS;
 volatile extern long gQEPosition;
 volatile extern int  gQEVelocity;
-volatile extern int  motorPosition;
+volatile extern int  motorElecPhase;
+volatile extern int loggedVarSelector;
 
 volatile extern int Ipeak;
 
 extern void DisableDrive(void);
 extern void I2Twatcher(void);
 
-extern void setIPid(int kp,int ki, char shift);
+extern void setIPid(int kp,int kd,int ki, char shift);
 extern void setSPid(int kp,int ki, char shift);
 extern void setMaxCurrent(int nom, int peak, int ovr);
 extern void RequestControlMode(char cm);

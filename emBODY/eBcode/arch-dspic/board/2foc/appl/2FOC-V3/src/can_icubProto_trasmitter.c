@@ -65,16 +65,65 @@ extern void CanIcubProtoTrasmitterSendPeriodicData(void)
     static tCanData payload; // = {{0}};
     unsigned long msgid;
 
-    /*
-    payload.w[0] = I2Tdata.IQMeasured;
-    payload.w[1] = gQEVelocity;
+    int loggedVar;
+    switch (loggedVarSelector)
+    {
+        case 1:
+            loggedVar = (int)ParkParm.qIa;
+            break;
+        case 2:
+            loggedVar = (int)ParkParm.qIb;
+            break;
+        case 3:
+            loggedVar = (int)ParkParm.qIc;
+            break;
+        case 4:
+            loggedVar = I2Tdata.IQMeasured;
+            break;
+        case 5:
+            loggedVar = I2Tdata.IDMeasured;
+            break;
+        case 6:
+            loggedVar = (int)ParkParm.qV1;
+            break;
+        case 7:
+            loggedVar = (int)ParkParm.qV2;
+            break;
+        case 8:
+            loggedVar = (int)ParkParm.qV3;
+            break;
+        case 9:
+            loggedVar = (int)ParkParm.qVd;
+            break;
+        case 10:
+            loggedVar = (int)ParkParm.qVq;
+            break;
+        case 11:
+            loggedVar = (int)ParkParm.PDC1;
+            break;
+        case 12:
+            loggedVar = (int)ParkParm.PDC2;
+            break;
+        case 13:
+            loggedVar = (int)ParkParm.PDC3;
+            break;
+        case 14:
+            loggedVar = (int)ParkParm.qIaOffset;
+            break;
+        case 15:
+            loggedVar = (int)ParkParm.qIbOffset;
+            break;
+        case 16:
+            loggedVar = (int)ParkParm.qIcOffset;
+            break;
+        default:
+            loggedVar = (int)0x8000;
+    }
+
+    payload.w[0] = loggedVar;
+    payload.w[1] = motorElecPhase;
     payload.w[2] = gQEPosition & 0xFFFF;
     payload.w[3] = gQEPosition >> 16;
-     */
-    payload.w[0] = (int)ParkParm.qV1;
-    payload.w[1] = motorPosition;
-    payload.w[2] = (int)ParkParm.qVq;
-    payload.w[3] = (int)ParkParm.qV3;
 
     msgid = CAN_ICUBPROTO_STDID_MAKE_TX(ICUBCANPROTO_CLASS_PERIODIC_MOTORCONTROL, canprototransmitter_bid, ICUBCANPROTO_PER_MC_MSG__2FOC);
 
