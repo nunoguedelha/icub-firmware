@@ -64,23 +64,30 @@ extern void CanIcubProtoTrasmitterSendPeriodicData(void)
 {
     static tCanData payload; // = {{0}};
     unsigned long msgid;
-
+    static int counter = 0;
     int loggedVar;
+    
+    counter = (counter+1)%1000;
     switch (loggedVarSelector)
     {
         case 1:
+        case 21:
             loggedVar = (int)ParkParm.qIa;
             break;
         case 2:
+        case 22:
             loggedVar = (int)ParkParm.qIb;
             break;
         case 3:
+        case 23:
             loggedVar = (int)ParkParm.qIc;
             break;
         case 4:
+        case 24:
             loggedVar = I2Tdata.IQMeasured;
             break;
         case 5:
+        case 25:
             loggedVar = I2Tdata.IDMeasured;
             break;
         case 6:
@@ -117,10 +124,10 @@ extern void CanIcubProtoTrasmitterSendPeriodicData(void)
             loggedVar = (int)ParkParm.qIcOffset;
             break;
         default:
-            loggedVar = (int)0x8000;
+            loggedVar = (int)counter;
     }
 
-    payload.w[0] = loggedVar;
+    payload.w[0] = loggedVar*10;
     payload.w[1] = motorElecPhase;
     payload.w[2] = gQEPosition & 0xFFFF;
     payload.w[3] = gQEPosition >> 16;

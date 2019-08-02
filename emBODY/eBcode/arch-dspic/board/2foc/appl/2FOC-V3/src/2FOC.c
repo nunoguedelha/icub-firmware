@@ -136,7 +136,8 @@ _FICD(ICS_PGD3 & JTAGEN_OFF); // & COE_ON ); //BKBUG_OFF
 //#define CALIBRATION
 
 #define BOARD_CAN_ADDR_DEFAULT 0xE
-#define VOLT_REF_SHIFT 5
+#define VOLT_REF_SHIFT 5 // for a PWM resolution of 1000
+#define PWM_50_DUTY_CYC (LOOPINTCY/2)
 
 #define isDriveEnabled() bDriveEnabled
 
@@ -191,7 +192,7 @@ volatile int iQerror_old = 0;
 volatile int iDerror_old = 0;
 volatile char limit = 0;
 
-static const int PWM_MAX = (8*LOOPINTCY)/20; // = 80%
+static const int PWM_MAX = 8*PWM_50_DUTY_CYC/10; // = 80%
 
 volatile int gMaxCurrent = 0;
 volatile long sI2Tlimit = 0;
@@ -952,6 +953,11 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
             FaultConditionsHandler();
         }
     }
+    
+    // Re-scale Vq, Vd with respect to the PWM resolution and fullscale.
+    Vq = Vq/(1000/PWM_50_DUTY_CYC);
+    Vd = Vd/(1000/PWM_50_DUTY_CYC);
+    
     //
     ////////////////////////////////////////////////////////////////////////////
 
@@ -977,7 +983,18 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
     ParkParm.qIbOffset = IKd;
     ParkParm.qIcOffset = IKi;
 
-    pwmOut(Va+ParkParm.qIaOffset,Vb+ParkParm.qIbOffset,Vc+ParkParm.qIcOffset);
+    if (loggedVarSelector > 20)
+    {
+        // Pin override register
+        PWM1CON2bits.OSYNC = 1;
+        P1OVDCON = 0x0000;
+    }
+    else
+    {
+        P1OVDCON = 0xFFFF;
+        pwmOut(Va+ParkParm.qIaOffset,Vb+ParkParm.qIbOffset,Vc+ParkParm.qIcOffset);
+    }
+    
     //
     ////////////////////////////////////////////////////////////////////////////
 
@@ -1030,7 +1047,7 @@ void DisableAuxServiceTimer()
 void DriveInit()
 // Perform drive SW/HW init
 {
-    pwmInit(LOOPINTCY/2, DDEADTIME, (8*LOOPINTCY)/20 /*pwm max = 80%*/);
+    pwmInit(PWM_50_DUTY_CYC, DDEADTIME, PWM_MAX /*pwm max = 80%*/);
 
     // setup and perform ADC offset calibration in MeasCurrParm.Offseta and Offsetb
     ADCDoOffsetCalibration();
