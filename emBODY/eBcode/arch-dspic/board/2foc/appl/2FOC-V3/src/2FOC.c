@@ -204,6 +204,7 @@ volatile char IKs = 10;
 volatile long IIntLimit = 0;//800L*1024L;
 
 volatile int  SKp = 0x0C;
+volatile int  Idoffset = 0;
 volatile int  SKi = 0x10;
 volatile char SKs = 0x0A;
 volatile long SIntLimit = 0;//800L*1024L;
@@ -233,9 +234,10 @@ void setIPid(int kp, int kd, int ki, char shift)
     IIntLimit = ((long)PWM_MAX)<<shift;
 }
 
-void setSPid(int kp, int ki, char shift)
+void setSPid(int kp, int kd, int ki, char shift)
 {
     loggedVarSelector = kp>>5;
+    Idoffset = kd/32-100;
     SKi = ki/2;
     SKs = shift;
     SIntLimit = ((long)PWM_MAX)<<shift;
@@ -907,7 +909,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
 
     ////////////////////////////////////////////////////////////////////////////
     // BEMF section
-    int iDerror = -I2Tdata.IDMeasured;
+    int iDerror = Idoffset-I2Tdata.IDMeasured;
 
     VdA += __builtin_mulss(iDerror-iDerror_old,0) + __builtin_mulss(iDerror+iDerror_old,0);
 
@@ -1244,7 +1246,7 @@ int main(void)
         }
     }
 
-    setSPid(SKp, SKi, SKs);
+    setSPid(SKp, 0, SKi, SKs);
 
     Timer3Enable(); // EnableAuxServiceTimer();
 

@@ -275,9 +275,10 @@ static int s_canIcubProtoParser_parse_pollingMsg(tCanData *rxpayload, unsigned c
 
         int  kp=((int)rxpayload->b[1])|(((int)rxpayload->b[2])<<8);
         int  ki=((int)rxpayload->b[3])|(((int)rxpayload->b[4])<<8);
+        int  kd=((int)rxpayload->b[5])|(((int)rxpayload->b[6])<<8);
         char ks=rxpayload->b[7];
 
-        setSPid(kp,ki,ks);
+        setSPid(kp,kd,ki,ks);
 
         return 1;
     }
