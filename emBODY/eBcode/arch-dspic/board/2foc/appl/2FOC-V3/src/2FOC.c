@@ -152,6 +152,7 @@ volatile tCtrlReferences CtrlReferences;
 volatile tParkParm ParkParm;
 volatile int motorElecPhase;
 volatile int loggedVarSelector = 0;
+volatile int configVarSelector = 0;
 
 /////////////////////////////////////////////////
 
@@ -222,14 +223,25 @@ void setMaxCurrent(int nom, int peak, int ovr)
 
 void setIPid(int kp, int kd, int ki, char shift)
 {
-    // DEBUG: IKp=kp/32 for getting the original value from the yarpmotorgui
-    // interface. On yarpmotorgui, pos/neg values between [-20,20] are encoded as follows:
-    //   0 -> -100
-    // 100 ->    0
-    // 145 -> + 45
-    IKp = kp/32-100;
-    IKd = kd/32-100;
-    IKi = ki/32-100;
+    switch (configVarSelector)
+    {
+        case 0:
+            IKp = kp;
+            IKi = ki / 2;
+            IKd = kd;
+            break;
+        case 1:
+            // DEBUG: ParkParm.qIxOffset=kp/32 for getting the original value from the yarpmotorgui
+            // interface. On yarpmotorgui, pos/neg values between [-20,20] are encoded as follows:
+            //   0 -> -100
+            // 100 ->    0
+            // 145 -> + 45
+            ParkParm.qIaOffset = kp / 32 - 100;
+            ParkParm.qIbOffset = kd / 32 - 100;
+            ParkParm.qIcOffset = ki / 32 - 100;
+            break;
+    }
+    
     IKs = shift;
     IIntLimit = ((long)PWM_MAX)<<shift;
 }
@@ -238,7 +250,7 @@ void setSPid(int kp, int kd, int ki, char shift)
 {
     loggedVarSelector = kp>>5;
     Idoffset = kd/32-100;
-    SKi = ki/2;
+    configVarSelector = ki>>5;
     SKs = shift;
     SIntLimit = ((long)PWM_MAX)<<shift;
 }
@@ -822,7 +834,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
         }
         else if (gControlMode == icubCanProto_controlmode_openloop)
         {
-            VqRef = ((long)CtrlReferences.VqRef)<<(10-VOLT_REF_SHIFT);
+            VqRef = ((long)CtrlReferences.VqRef)<<(IKs-VOLT_REF_SHIFT);
             IqRef = 0;
         }
         else
@@ -845,13 +857,13 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
     {
         int iQerror = IqRef-I2Tdata.IQMeasured;
 
-        VqA += __builtin_mulss(iQerror-iQerror_old,0) + __builtin_mulss(iQerror+iQerror_old,0);
+        VqA += __builtin_mulss(iQerror-iQerror_old,IKp) + __builtin_mulss(iQerror+iQerror_old,IKi);
 
         iQerror_old = iQerror;
 
         if (VqA > IIntLimit) VqA = IIntLimit; else if (VqA < -IIntLimit) VqA = -IIntLimit;
 
-        Vq = (int)(VqA>>10);
+        Vq = (int)(VqA>>IKs);
 
         // alternative formulation with ff term
         //VqA += __builtin_mulss(iQerror+iQerror_old,Ki);
@@ -876,7 +888,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
             if (limit == 1)
             {
                 int iQerror =  Ipeak-I2Tdata.IQMeasured;
-                VqL += __builtin_mulss(iQerror-iQerror_old,0) + __builtin_mulss(iQerror+iQerror_old,0);
+                VqL += __builtin_mulss(iQerror-iQerror_old,IKp) + __builtin_mulss(iQerror+iQerror_old,IKi);
                 iQerror_old = iQerror;
 
                 if (VqL >= 0) { VqL = 0; limit = 0; iQerror_old = 0; }
@@ -884,19 +896,19 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
             else if (limit == -1)
             {
                 int iQerror = -Ipeak-I2Tdata.IQMeasured;
-                VqL += __builtin_mulss(iQerror-iQerror_old,0) + __builtin_mulss(iQerror+iQerror_old,0);
+                VqL += __builtin_mulss(iQerror-iQerror_old,IKp) + __builtin_mulss(iQerror+iQerror_old,IKi);
                 iQerror_old = iQerror;
 
                 if (VqL <= 0) { VqL = 0; limit = 0; iQerror_old = 0; }
             }
 
-            Vq = (int)((VqRef+VqL)>>10);
+            Vq = (int)((VqRef+VqL)>>IKs);
         }
         else
         {
             if (gControlMode == icubCanProto_controlmode_openloop)
             {
-                Vq = (int)(VqRef>>10);
+                Vq = (int)(VqRef>>IKs);
             }
             else // if (gControlMode == icubCanProto_controlmode_speed_voltage)
             {
@@ -911,13 +923,13 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
     // BEMF section
     int iDerror = Idoffset-I2Tdata.IDMeasured;
 
-    VdA += __builtin_mulss(iDerror-iDerror_old,0) + __builtin_mulss(iDerror+iDerror_old,0);
+    VdA += __builtin_mulss(iDerror-iDerror_old,IKp) + __builtin_mulss(iDerror+iDerror_old,IKi);
 
     iDerror_old = iDerror;
 
     if (VdA > IIntLimit) VdA = IIntLimit; else if (VdA < -IIntLimit) VdA = -IIntLimit;
 
-    int Vd = (int)(VdA>>10);
+    int Vd = (int)(VdA>>IKs);
     //
     ////////////////////////////////////////////////////////////////////////////
 
@@ -981,9 +993,6 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
     ParkParm.qV3 = Vc;
     ParkParm.qVd = Vd;
     ParkParm.qVq = Vq;
-    ParkParm.qIaOffset = IKp;
-    ParkParm.qIbOffset = IKd;
-    ParkParm.qIcOffset = IKi;
 
     if (loggedVarSelector > 20)
     {
@@ -1145,6 +1154,10 @@ void DisableDrive()
 int main(void)
 {
     volatile extern unsigned char gCanProtocolCompatible;
+
+    ParkParm.qIaOffset = 0;
+    ParkParm.qIbOffset = 0;
+    ParkParm.qIcOffset = 0;
 
     oscConfig(); // Configure Oscillator Clock Source, PLL
 
