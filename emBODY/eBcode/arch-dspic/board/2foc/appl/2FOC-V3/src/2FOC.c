@@ -151,6 +151,7 @@ volatile tMeasCurrParm MeasCurrParm;
 volatile tCtrlReferences CtrlReferences;
 volatile tParkParm ParkParm;
 volatile int motorElecPhase;
+volatile int encShift = 0;
 volatile int loggedVarSelector = 0;
 volatile int configVarSelector = 0;
 
@@ -251,7 +252,7 @@ void setSPid(int kp, int kd, int ki, char shift)
     loggedVarSelector = kp>>5;
     Idoffset = kd/32-100;
     configVarSelector = ki>>5;
-    SKs = shift;
+    encShift = (int)shift;
     SIntLimit = ((long)PWM_MAX)<<shift;
 }
 
@@ -608,6 +609,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
     // enc is in [0 - 360) range here
 
     char sector = 0;
+    enc += encShift;
     motorElecPhase = enc;
 
     if (MotorConfig.has_hall)

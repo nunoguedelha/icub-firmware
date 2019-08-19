@@ -123,6 +123,15 @@ extern void CanIcubProtoTrasmitterSendPeriodicData(void)
         case 16:
             loggedVar = (int)ParkParm.qIcOffset;
             break;
+        case 17:
+            loggedVar = (int)configVarSelector;
+            break;
+        case 18:
+            loggedVar = (int)Idoffset;
+            break;
+        case 19:
+            loggedVar = (int)encShift;
+            break;
         default:
             loggedVar = (int)counter;
     }

@@ -63,6 +63,9 @@ volatile extern long gQEPosition;
 volatile extern int  gQEVelocity;
 volatile extern int  motorElecPhase;
 volatile extern int loggedVarSelector;
+volatile extern int configVarSelector;
+volatile extern int Idoffset;
+volatile extern int encShift;
 
 volatile extern int Ipeak;
 
