@@ -222,14 +222,23 @@ void setMaxCurrent(int nom, int peak, int ovr)
     Iovr = ovr;
 }
 
-void setIPid(int kp, int kd, int ki, char shift)
+void setIPid(int kp, int kd, int ki, char shift) {
+    IKp = kp;
+    IKi = ki / 2;
+    IKd = kd;
+    IKs = shift;
+    IIntLimit = ((long)PWM_MAX)<<shift;
+}
+
+void setSPid(int kp, int kd, int ki, char shift)
 {
+    configVarSelector = kp>>5;
+    int inputData = kd>>5;
+    
     switch (configVarSelector)
     {
         case 0:
-            IKp = kp;
-            IKi = ki / 2;
-            IKd = kd;
+            loggedVarSelector = inputData;
             break;
         case 1:
             // DEBUG: ParkParm.qIxOffset=kp/32 for getting the original value from the yarpmotorgui
@@ -237,22 +246,24 @@ void setIPid(int kp, int kd, int ki, char shift)
             //   0 -> -100
             // 100 ->    0
             // 145 -> + 45
-            ParkParm.qIaOffset = kp / 32 - 100;
-            ParkParm.qIbOffset = kd / 32 - 100;
-            ParkParm.qIcOffset = ki / 32 - 100;
+            ParkParm.qIaOffset = inputData - 100;
             break;
+        case 2:
+            ParkParm.qIbOffset = inputData - 100;
+            break;
+        case 3:
+            ParkParm.qIcOffset = inputData - 100;
+            break;
+        case 4:
+            Idoffset = inputData - 100;
+            break;
+        case 5:
+            encShift = inputData - 100;
+        default:
+            loggedVarSelector = -1;
     }
     
-    IKs = shift;
-    IIntLimit = ((long)PWM_MAX)<<shift;
-}
-
-void setSPid(int kp, int kd, int ki, char shift)
-{
-    loggedVarSelector = kp>>5;
-    Idoffset = kd/32-100;
-    configVarSelector = ki>>5;
-    encShift = (int)shift;
+    SKs = shift;
     SIntLimit = ((long)PWM_MAX)<<shift;
 }
 
